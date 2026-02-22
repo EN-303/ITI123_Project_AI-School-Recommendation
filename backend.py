@@ -83,7 +83,7 @@ SCORE_PG_RULES = {
 }
 
 # Debug log collector — populated during each request, read by the frontend
-# debug_logs: list[str] = []
+debug_logs: list[str] = []
 
 # ---------------------------------------------------------------------------
 # School name normalization
@@ -364,7 +364,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
         type_list = user_cca_type if isinstance(user_cca_type, list) else [user_cca_type]
         cca_batch_filter["$and"].append({"cca_type": {"$in": type_list}})
     try:
-        all_cca_data = vectordb.get(where=cca_batch_filter)
+        all_cca_data = vectordb.get(where=cca_batch_filter, limit=5000)
     except Exception:
         all_cca_data = {"ids": [], "metadatas": [], "documents": []}
 
@@ -410,7 +410,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
         if cca_items:
             search_terms = []
             if user_cca_grp:
-                search_terms = [term.strip().lower() for term in user_cca_grp.split(',') if term.strip()]
+                search_terms = [term.strip().lower() for term in user_cca_grp.split(",") if term.strip()]
             search_variants = set()
             for term in search_terms:
                 search_variants.add(term)
@@ -420,30 +420,22 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
                     search_variants.add(term + 's')
             for item in cca_items:
                 cca_grp_lower = item["metadata"].get("cca_grp", "").lower()
-                matched = False
-                for v in search_variants:
-                    if v in cca_grp_lower:
-                        matched = True
-                        break
+                matched = any(v in cca_grp_lower for v in search_variants)
                 if matched:
-                    from langchain_core.documents import Document
                     cca_match = [Document(page_content=item["page_content"], metadata=item["metadata"])]
                     break
             if not cca_match and user_cca_type:
-                from langchain_core.documents import Document
                 cca_match = [Document(page_content=cca_items[0]["page_content"], metadata=cca_items[0]["metadata"])]
 
         if cca_match:
             match_doc = cca_match[0]
             school_scores[key]["cca_info"] = match_doc.metadata
-
             if not user_cca_grp:
                 if user_cca_type:
                     school_scores[key]["cca_score"] = 1
             else:
-                meta_grp = match_doc.metadata.get('cca_grp', '').lower()
-
-                cca_terms = [term.strip().lower() for term in user_cca_grp.split(',') if term.strip()]
+                meta_grp = match_doc.metadata.get("cca_grp", "").lower()
+                cca_terms = [term.strip().lower() for term in user_cca_grp.split(",") if term.strip()]
                 score_variants = set()
                 for term in cca_terms:
                     score_variants.add(term)
@@ -452,14 +444,11 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
                     else:
                         score_variants.add(term + 's')
                 cca_matched = any(v in meta_grp for v in score_variants)
-
                 if user_cca_type and cca_matched:
                     school_scores[key]["cca_score"] = 2
-
-                if not user_cca_type and cca_matched:
+                elif not user_cca_type and cca_matched:
                     school_scores[key]["cca_score"] = 1
-
-                if user_cca_type and not cca_matched:
+                elif user_cca_type and not cca_matched:
                     school_scores[key]["cca_score"] = 1
 
         sch_cop_gap = next((item for item in eligible_schs if item.metadata.get("school_key") == key), None)
@@ -498,9 +487,9 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
     final_list.sort(key=lambda x: (-x["score"], x["cop_gap"]))
     top_6 = final_list[:6]
 
-    # debug_logs.append(f"**weighted_sch_ranker**: {len(final_list)} total schools scored, returning top {len(top_6)}")
-    # for i, s in enumerate(top_6, 1):
-    #     debug_logs.append(f"  [{i}] {s['school_name']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
+    debug_logs.append(f"**weighted_sch_ranker**: {len(final_list)} total schools scored, returning top {len(top_6)}")
+    for i, s in enumerate(top_6, 1):
+        debug_logs.append(f"  [{i}] {s['school_name']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
     return top_6
 
 
@@ -509,7 +498,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
 # ---------------------------------------------------------------------------
 
 def full_ranking_logic(vectordb, inputs):
-    # debug_logs.clear()
+    debug_logs.clear()
     user_score = inputs.get("user_score")
     if user_score is None:
         return "INVALID_INPUT: user_score is required."
@@ -554,7 +543,7 @@ def full_ranking_logic(vectordb, inputs):
 
     eligible_schs = sch_retriever(vectordb, user_score=user_score, posting_group=pg, user_sch_type=user_sch_type)
     pg_upper = pg.upper()
-    # debug_logs.append(f"**sch_retriever**: {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
+    debug_logs.append(f"**sch_retriever**: {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
 
     if not eligible_schs:
         return (
@@ -572,7 +561,7 @@ def full_ranking_logic(vectordb, inputs):
         user_cca_grp=inputs.get("user_cca_grp"),
     )
 
-    # debug_logs.append(f"**full_ranking_logic**: {len(top_6)} schools passed to LLM context")
+    debug_logs.append(f"**full_ranking_logic**: {len(top_6)} schools passed to LLM context")
 
     if not top_6:
         return (
@@ -700,7 +689,7 @@ IMPORTANT: You MUST include every single school from the MATCHED SCHOOLS data. D
 
 def build_rag_chain(vectordb):
     """Build and return the LCEL RAG chain."""
-    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, max_tokens=4096)
+    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, max_tokens=16384)
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     output_parser = StrOutputParser()
 
