@@ -242,10 +242,13 @@ with col_result:
                 st.subheader("Recommended Schools")
                 st.markdown(response)
 
+            with st.expander("Debug Info", expanded=False):
+                st.markdown(f"**Input:** {user_input}")
                 if debug_logs:
-                    with st.expander("Debug Info", expanded=False):
-                        for log in debug_logs:
-                            st.markdown(log)
+                    for log in debug_logs:
+                        st.markdown(log)
+                else:
+                    st.write("No debug logs captured.")
     else:
         st.markdown(
             """
