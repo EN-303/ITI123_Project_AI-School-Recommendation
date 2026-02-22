@@ -83,7 +83,7 @@ SCORE_PG_RULES = {
 }
 
 # Debug log collector — populated during each request, read by the frontend
-debug_logs: list[str] = []
+# debug_logs: list[str] = []
 
 # ---------------------------------------------------------------------------
 # School name normalization
@@ -410,33 +410,56 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
         if cca_items:
             search_terms = []
             if user_cca_grp:
-                search_terms = [term.strip().lower() for term in user_cca_grp.split(",") if term.strip()]
+                search_terms = [term.strip().lower() for term in user_cca_grp.split(',') if term.strip()]
+            search_variants = set()
+            for term in search_terms:
+                search_variants.add(term)
+                if term.endswith('s'):
+                    search_variants.add(term[:-1])
+                else:
+                    search_variants.add(term + 's')
             for item in cca_items:
                 cca_grp_lower = item["metadata"].get("cca_grp", "").lower()
-                cca_content_lower = item["page_content"].lower()
-                matched = any(term in cca_grp_lower or term in cca_content_lower for term in search_terms)
+                matched = False
+                for v in search_variants:
+                    if v in cca_grp_lower:
+                        matched = True
+                        break
                 if matched:
+                    from langchain_core.documents import Document
                     cca_match = [Document(page_content=item["page_content"], metadata=item["metadata"])]
                     break
             if not cca_match and user_cca_type:
+                from langchain_core.documents import Document
                 cca_match = [Document(page_content=cca_items[0]["page_content"], metadata=cca_items[0]["metadata"])]
 
         if cca_match:
             match_doc = cca_match[0]
             school_scores[key]["cca_info"] = match_doc.metadata
+
             if not user_cca_grp:
                 if user_cca_type:
                     school_scores[key]["cca_score"] = 1
             else:
-                meta_grp = match_doc.metadata.get("cca_grp", "").lower()
-                text_content = match_doc.page_content.lower()
-                cca_terms = [term.strip().lower() for term in user_cca_grp.split(",") if term.strip()]
-                cca_matched = any(term in meta_grp or term in text_content for term in cca_terms)
+                meta_grp = match_doc.metadata.get('cca_grp', '').lower()
+
+                cca_terms = [term.strip().lower() for term in user_cca_grp.split(',') if term.strip()]
+                score_variants = set()
+                for term in cca_terms:
+                    score_variants.add(term)
+                    if term.endswith('s'):
+                        score_variants.add(term[:-1])
+                    else:
+                        score_variants.add(term + 's')
+                cca_matched = any(v in meta_grp for v in score_variants)
+
                 if user_cca_type and cca_matched:
                     school_scores[key]["cca_score"] = 2
-                elif not user_cca_type and cca_matched:
+
+                if not user_cca_type and cca_matched:
                     school_scores[key]["cca_score"] = 1
-                elif user_cca_type and not cca_matched:
+
+                if user_cca_type and not cca_matched:
                     school_scores[key]["cca_score"] = 1
 
         sch_cop_gap = next((item for item in eligible_schs if item.metadata.get("school_key") == key), None)
@@ -475,9 +498,9 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
     final_list.sort(key=lambda x: (-x["score"], x["cop_gap"]))
     top_6 = final_list[:6]
 
-    debug_logs.append(f"**weighted_sch_ranker**: {len(final_list)} total schools scored, returning top {len(top_6)}")
-    for i, s in enumerate(top_6, 1):
-        debug_logs.append(f"  [{i}] {s['school_name']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
+    # debug_logs.append(f"**weighted_sch_ranker**: {len(final_list)} total schools scored, returning top {len(top_6)}")
+    # for i, s in enumerate(top_6, 1):
+    #     debug_logs.append(f"  [{i}] {s['school_name']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
     return top_6
 
 
@@ -486,7 +509,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
 # ---------------------------------------------------------------------------
 
 def full_ranking_logic(vectordb, inputs):
-    debug_logs.clear()
+    # debug_logs.clear()
     user_score = inputs.get("user_score")
     if user_score is None:
         return "INVALID_INPUT: user_score is required."
@@ -531,7 +554,7 @@ def full_ranking_logic(vectordb, inputs):
 
     eligible_schs = sch_retriever(vectordb, user_score=user_score, posting_group=pg, user_sch_type=user_sch_type)
     pg_upper = pg.upper()
-    debug_logs.append(f"**sch_retriever**: {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
+    # debug_logs.append(f"**sch_retriever**: {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
 
     if not eligible_schs:
         return (
@@ -549,7 +572,7 @@ def full_ranking_logic(vectordb, inputs):
         user_cca_grp=inputs.get("user_cca_grp"),
     )
 
-    debug_logs.append(f"**full_ranking_logic**: {len(top_6)} schools passed to LLM context")
+    # debug_logs.append(f"**full_ranking_logic**: {len(top_6)} schools passed to LLM context")
 
     if not top_6:
         return (
@@ -654,7 +677,9 @@ INSTRUCTIONS:
 
 2. Start with: "Based on your PSLE score of {user_score} and your preferences for {user_zone} zone and {user_cca_grp} CCA, here are the recommended {posting_group} schools:"
 
-3. For each school, write a recommendation in this format:
+3. You MUST list ALL schools provided in the MATCHED SCHOOLS data above. Do NOT skip or omit any school. If there are 6 schools, list all 6. Every "Recommendation #" entry must appear in your output.
+
+4. For each school, write a recommendation in this format:
 
    **#[rank]. [SCHOOL NAME]**
    URL: [url from data]
@@ -665,9 +690,11 @@ INSTRUCTIONS:
    If no web sources exist, omit the "| Web:" part. Example with web sources:
    References: ChromaDB: COP, School Info, CCA | Web: SchoolName Info - SiteName (https://example.com/page1), Getting There (https://example.com/page2)
 
-4. If zone/location preference is "Any", skip the location comparison.
+5. If zone/location preference is "Any", skip the location comparison.
 
-5. End with one sentence encouraging the student to visit the school websites for more details.
+6. End with one sentence encouraging the student to visit the school websites for more details.
+
+IMPORTANT: You MUST include every single school from the MATCHED SCHOOLS data. Do NOT summarize, merge, or skip any schools.
 """
 
 
