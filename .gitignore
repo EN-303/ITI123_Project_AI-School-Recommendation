@@ -1,0 +1,71 @@
+# Environment variables
+.env
+.env_local
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Downloaded assets (fetched from Google Drive at runtime)
+data/
+sch_vector_db/
+
+# Credentials and secrets
+*.pem
+*.key
+credentials.json
+secrets.json
+.streamlit/secrets.toml
+
+# Notebook (not needed for deployed app)
+*.ipynb
+backup/
+
+# Temp helper scripts
+_*.py
