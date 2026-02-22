@@ -10,6 +10,7 @@ from backend import (
     VALID_SCH_TYPES,
     VALID_ZONES,
     build_rag_chain,
+    debug_logs,
     get_cca_groups,
     get_locations,
     init_vectordb,
@@ -138,12 +139,12 @@ with col_form:
     valid_pgs = get_valid_pgs(user_score)
     pg_options = {PG_DISPLAY.get(pg, pg.upper()): pg for pg in valid_pgs}
 
-    st.markdown(
-        f'<div class="score-info">Score <strong>{user_score}</strong> qualifies for: '
-        f'<strong>{", ".join(pg.upper() for pg in valid_pgs if pg != "ip")}</strong>'
-        f' (and IP if COP allows)</div>',
-        unsafe_allow_html=True,
-    )
+    # st.markdown(
+    #     f'<div class="score-info">Score <strong>{user_score}</strong> qualifies for: '
+    #     f'<strong>{", ".join(pg.upper() for pg in valid_pgs if pg != "ip")}</strong>'
+    #     f' (and IP if COP allows)</div>',
+    #     unsafe_allow_html=True,
+    # )
 
     # -- Posting Group --
     pg_label = st.selectbox(
@@ -240,6 +241,11 @@ with col_result:
             if response:
                 st.subheader("Recommended Schools")
                 st.markdown(response)
+
+                if debug_logs:
+                    with st.expander("Debug Info", expanded=False):
+                        for log in debug_logs:
+                            st.markdown(log)
     else:
         st.markdown(
             """

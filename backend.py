@@ -82,6 +82,9 @@ SCORE_PG_RULES = {
     (26, 30): ["pg1"],
 }
 
+# Debug log collector — populated during each request, read by the frontend
+debug_logs: list[str] = []
+
 # ---------------------------------------------------------------------------
 # School name normalization
 # ---------------------------------------------------------------------------
@@ -472,9 +475,9 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
     final_list.sort(key=lambda x: (-x["score"], x["cop_gap"]))
     top_6 = final_list[:6]
 
-    print(f"\n[DEBUG] weighted_sch_ranker: {len(final_list)} total schools scored, returning top {len(top_6)}:")
+    debug_logs.append(f"**weighted_sch_ranker**: {len(final_list)} total schools scored, returning top {len(top_6)}")
     for i, s in enumerate(top_6, 1):
-        print(f"  [{i}] {s['school_name']} | key: {s['school']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
+        debug_logs.append(f"  [{i}] {s['school_name']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
     return top_6
 
 
@@ -483,6 +486,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
 # ---------------------------------------------------------------------------
 
 def full_ranking_logic(vectordb, inputs):
+    debug_logs.clear()
     user_score = inputs.get("user_score")
     if user_score is None:
         return "INVALID_INPUT: user_score is required."
@@ -527,7 +531,7 @@ def full_ranking_logic(vectordb, inputs):
 
     eligible_schs = sch_retriever(vectordb, user_score=user_score, posting_group=pg, user_sch_type=user_sch_type)
     pg_upper = pg.upper()
-    print(f"[DEBUG] sch_retriever returned {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
+    debug_logs.append(f"**sch_retriever**: {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
 
     if not eligible_schs:
         return (
@@ -545,7 +549,7 @@ def full_ranking_logic(vectordb, inputs):
         user_cca_grp=inputs.get("user_cca_grp"),
     )
 
-    print(f"[DEBUG] weighted_sch_ranker returned {len(top_6)} schools for context")
+    debug_logs.append(f"**full_ranking_logic**: {len(top_6)} schools passed to LLM context")
 
     if not top_6:
         return (
