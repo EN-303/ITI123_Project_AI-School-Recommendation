@@ -1,5 +1,6 @@
 """
 Backend module for the AI School Recommendation system.
+Extracts core logic from Project_v5.ipynb for use by the Streamlit frontend.
 """
 
 import os
@@ -469,7 +470,12 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
         })
 
     final_list.sort(key=lambda x: (-x["score"], x["cop_gap"]))
-    return final_list[:6]
+    top_6 = final_list[:6]
+
+    print(f"\n[DEBUG] weighted_sch_ranker: {len(final_list)} total schools scored, returning top {len(top_6)}:")
+    for i, s in enumerate(top_6, 1):
+        print(f"  [{i}] {s['school_name']} | key: {s['school']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
+    return top_6
 
 
 # ---------------------------------------------------------------------------
@@ -521,6 +527,7 @@ def full_ranking_logic(vectordb, inputs):
 
     eligible_schs = sch_retriever(vectordb, user_score=user_score, posting_group=pg, user_sch_type=user_sch_type)
     pg_upper = pg.upper()
+    print(f"[DEBUG] sch_retriever returned {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
 
     if not eligible_schs:
         return (
@@ -537,6 +544,8 @@ def full_ranking_logic(vectordb, inputs):
         user_cca_type=inputs.get("user_cca_type"),
         user_cca_grp=inputs.get("user_cca_grp"),
     )
+
+    print(f"[DEBUG] weighted_sch_ranker returned {len(top_6)} schools for context")
 
     if not top_6:
         return (

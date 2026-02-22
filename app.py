@@ -50,12 +50,13 @@ st.markdown("""
         border-radius: 8px;
     }
     .score-info {
-        background-color: #eaf2f8;
+        background-color: rgba(41, 128, 185, 0.15);
         border-left: 4px solid #2980b9;
         padding: 0.75rem 1rem;
         border-radius: 0 6px 6px 0;
         margin-bottom: 1rem;
         font-size: 0.9rem;
+        color: inherit;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -114,9 +115,9 @@ def get_valid_pgs(score: int) -> list[str]:
 
 PG_DISPLAY = {
     "ip": "IP (Integrated Programme)",
-    "pg3": "PG3 (Express / G3)",
-    "pg2": "PG2 (Normal Academic / G2)",
-    "pg1": "PG1 (Normal Technical / G1)",
+    "pg3": "PG3 (Posting Group 3)",
+    "pg2": "PG2 (Posting Group 2)",
+    "pg1": "PG1 (Posting Group 1)",
 }
 
 # ---------------------------------------------------------------------------
@@ -129,7 +130,7 @@ with col_form:
 
     # -- PSLE Score --
     user_score = st.slider(
-        "PSLE Achievement Level Score",
+        "PSLE Score",
         min_value=4, max_value=32, value=10, step=1,
         help="Lower score = better performance. Range: 4 (best) to 32.",
     )
@@ -170,34 +171,34 @@ with col_form:
         help="Leave empty for no zone preference.",
     )
 
-    user_location = st.selectbox(
-        "Preferred Location",
-        options=["Any"] + locations,
-        help="Specific district / area preference.",
+    user_location = st.multiselect(
+        "Preferred Location(s)",
+        options=locations,
+        help="Select one or more districts. Leave empty for no preference.",
     )
 
     st.divider()
 
     # -- CCA --
-    user_cca_type = st.selectbox(
+    user_cca_type = st.multiselect(
         "CCA Category",
-        options=["Any"] + VALID_CCA_TYPES,
-        help="Broad CCA category filter.",
+        options=VALID_CCA_TYPES,
+        help="Select one or more CCA categories. Leave empty for no preference.",
     )
 
-    user_cca_grp = st.selectbox(
+    user_cca_grp = st.text_input(
         "Specific CCA",
-        options=["Any"] + cca_groups,
-        help="Select a specific CCA or type one in. Leave as 'Any' for no preference.",
+        placeholder="e.g. Robotics, Basketball, Choir",
+        help="Type one or more CCAs separated by commas. Leave blank for no preference.",
     )
 
     st.divider()
 
     # -- Weights --
     st.markdown("**Priority Weights** (must total 1.0)")
-    w_loc = st.slider("Location weight", 0.0, 1.0, 0.5, 0.1)
+    w_loc = st.slider("Location", 0.0, 1.0, 0.5, 0.1)
     w_cca = round(1.0 - w_loc, 1)
-    st.write(f"CCA weight: **{w_cca}**")
+    st.write(f"CCA: **{w_cca}**")
 
     st.divider()
 
@@ -213,6 +214,10 @@ with col_result:
         if not sch_type_options:
             st.error("Please select at least one school type.")
         else:
+            loc_str = ", ".join(user_location) if user_location else None
+            cca_type_val = user_cca_type if user_cca_type else None
+            cca_grp_val = user_cca_grp.strip() if user_cca_grp.strip() else None
+
             user_input = {
                 "user_score": user_score,
                 "posting_group": posting_group,
@@ -220,9 +225,9 @@ with col_result:
                 "w_loc": w_loc,
                 "w_cca": w_cca,
                 "user_zone": user_zone if user_zone else None,
-                "user_location": user_location if user_location != "Any" else None,
-                "user_cca_type": user_cca_type if user_cca_type != "Any" else None,
-                "user_cca_grp": user_cca_grp if user_cca_grp != "Any" else None,
+                "user_location": loc_str,
+                "user_cca_type": cca_type_val,
+                "user_cca_grp": cca_grp_val,
             }
 
             with st.spinner("Searching schools and fetching travel info..."):
