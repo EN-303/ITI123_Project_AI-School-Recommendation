@@ -240,7 +240,8 @@ with col_result:
 
             if response:
                 st.subheader("Recommended Schools")
-                st.markdown(response)
+                with st.container(height=600):
+                    st.markdown(response)
 
             with st.expander("Debug Info", expanded=False):
                 st.markdown(f"**Input:** {user_input}")

@@ -252,22 +252,29 @@ def search_travel_info(school_name: str) -> dict:
                 travel_snippets.append(snippet)
                 if link:
                     sources.append({"title": title, "link": link})
+                if len(travel_snippets) >= 3:
+                    break
 
-        seen = set()
-        unique_sources = []
-        for s in sources:
-            key = s["link"]
-            if key and key not in seen:
-                seen.add(key)
-                unique_sources.append(s)
+        if not travel_snippets:
+            for r in results.get("organic_results", [])[:2]:
+                snippet = r.get("snippet", "")
+                link = r.get("link", "")
+                title = r.get("title", "")
+                if snippet:
+                    travel_snippets.append(snippet)
+                    if link:
+                        sources.append({"title": title, "link": link})
+
+        info = " | ".join(travel_snippets[:3]) if travel_snippets else "No specific travel information found"
+        unique_sources = list({s["link"]: s for s in sources if s.get("link")}.values())
 
         return {
-            "info": " | ".join(travel_snippets) if travel_snippets else "No travel info found",
-            "sources": unique_sources,
+            "info": info,
+            "sources": unique_sources[:3],
             "knowledge_graph": kg_details,
         }
     except Exception as e:
-        empty_result["info"] = f"Travel search error: {str(e)}"
+        empty_result["info"] = f"Web search unavailable: {str(e)}"
         return empty_result
 
 
@@ -487,9 +494,13 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
     final_list.sort(key=lambda x: (-x["score"], x["cop_gap"]))
     top_6 = final_list[:6]
 
-    debug_logs.append(f"**weighted_sch_ranker**: {len(final_list)} total schools scored, returning top {len(top_6)}")
+    debug_logs.append(f"**Top {len(top_6)} Schools**")
     for i, s in enumerate(top_6, 1):
-        debug_logs.append(f"  [{i}] {s['school_name']} | score: {s['score']:.2f} | cop_gap: {s['cop_gap']}")
+        cca = s.get("matched_cca") or "None"
+        debug_logs.append(
+            f"  {i}. {s['school_name']} | score: {s['score']:.2f} | "
+            f"cop_gap: {s['cop_gap']} | location: {s['location']} | CCA: {cca}"
+        )
     return top_6
 
 
@@ -535,15 +546,36 @@ def full_ranking_logic(vectordb, inputs):
                 return f"INVALID_INPUT: user_sch_type must be one of {VALID_SCH_TYPES}."
 
     w_loc = inputs.get("w_loc")
+    if w_loc is None:
+        return "INVALID_INPUT: w_loc is required."
+    if not isinstance(w_loc, (int, float)) or w_loc < 0 or w_loc > 1:
+        return "INVALID_INPUT: w_loc must be between 0 and 1."
+
     w_cca = inputs.get("w_cca")
-    if w_loc is None or w_cca is None:
-        return "INVALID_INPUT: w_loc and w_cca are required."
+    if w_cca is None:
+        return "INVALID_INPUT: w_cca is required."
+    if not isinstance(w_cca, (int, float)) or w_cca < 0 or w_cca > 1:
+        return "INVALID_INPUT: w_cca must be between 0 and 1."
+
     if abs((w_loc + w_cca) - 1.0) > 0.001:
         return f"INVALID_INPUT: w_loc ({w_loc}) + w_cca ({w_cca}) must sum to 1.0."
 
+    user_zone = inputs.get("user_zone")
+    if user_zone:
+        zones = user_zone if isinstance(user_zone, list) else [user_zone]
+        for z in zones:
+            if z.upper() not in VALID_ZONES:
+                return f"INVALID_INPUT: user_zone must be one of {VALID_ZONES}."
+
+    user_cca_type = inputs.get("user_cca_type")
+    if user_cca_type:
+        cca_types = user_cca_type if isinstance(user_cca_type, list) else [user_cca_type]
+        for ct in cca_types:
+            if ct.upper() not in VALID_CCA_TYPES:
+                return f"INVALID_INPUT: user_cca_type must be one of {VALID_CCA_TYPES}."
+
     eligible_schs = sch_retriever(vectordb, user_score=user_score, posting_group=pg, user_sch_type=user_sch_type)
     pg_upper = pg.upper()
-    debug_logs.append(f"**sch_retriever**: {len(eligible_schs)} eligible schools for {pg_upper} score={user_score}")
 
     if not eligible_schs:
         return (
@@ -560,8 +592,6 @@ def full_ranking_logic(vectordb, inputs):
         user_cca_type=inputs.get("user_cca_type"),
         user_cca_grp=inputs.get("user_cca_grp"),
     )
-
-    debug_logs.append(f"**full_ranking_logic**: {len(top_6)} schools passed to LLM context")
 
     if not top_6:
         return (

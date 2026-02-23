@@ -53,8 +53,8 @@ desktop.ini
 logs/
 
 # Downloaded assets (fetched from Google Drive at runtime)
-data/
-sch_vector_db/
+# data/
+# sch_vector_db/
 
 # Credentials and secrets
 *.pem
@@ -64,7 +64,7 @@ secrets.json
 .streamlit/secrets.toml
 
 # Notebook (not needed for deployed app)
-*.ipynb
+# *.ipynb
 backup/
 
 # Temp helper scripts
