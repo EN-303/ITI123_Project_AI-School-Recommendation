@@ -110,7 +110,7 @@ def get_valid_pgs(score: int) -> list[str]:
         if lo <= score <= hi:
             valid = groups
             break
-    valid.append("ip")
+    if score < 9: valid.append("ip")
     return valid
 
 
