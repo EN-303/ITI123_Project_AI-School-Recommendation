@@ -46,9 +46,10 @@ def _download_assets():
 
 
 # Try loading local .env files (ignored on Streamlit Cloud if not present)
-for env_file in [".env", ".env_local"]:
-    if os.path.exists(env_file):
-        load_dotenv(env_file)
+if os.path.exists(".env"):
+    load_dotenv(".env")
+if os.path.exists(".env_local"):
+    load_dotenv(".env_local", override=True)
 
 _download_assets()
 
@@ -244,26 +245,24 @@ def search_travel_info(school_name: str) -> dict:
                 sources.append({"title": kg.get("title", "School Website"), "link": kg["website"]})
 
         transport_keywords = ["mrt", "bus", "walk", "station", "transport", "minute", "km", "distance", "route", "nearest"]
-        for r in results.get("organic_results", [])[:5]:
+        organic = results.get("organic_results", [])[:5]
+
+        for r in organic:
             snippet = r.get("snippet", "")
             link = r.get("link", "")
             title = r.get("title", "")
+            if link:
+                sources.append({"title": title, "link": link})
             if snippet and any(kw in snippet.lower() for kw in transport_keywords):
                 travel_snippets.append(snippet)
-                if link:
-                    sources.append({"title": title, "link": link})
                 if len(travel_snippets) >= 3:
                     break
 
         if not travel_snippets:
-            for r in results.get("organic_results", [])[:2]:
+            for r in organic[:2]:
                 snippet = r.get("snippet", "")
-                link = r.get("link", "")
-                title = r.get("title", "")
                 if snippet:
                     travel_snippets.append(snippet)
-                    if link:
-                        sources.append({"title": title, "link": link})
 
         info = " | ".join(travel_snippets[:3]) if travel_snippets else "No specific travel information found"
         unique_sources = list({s["link"]: s for s in sources if s.get("link")}.values())
@@ -645,7 +644,12 @@ def full_ranking_logic(vectordb, inputs):
         sources_str = ""
         if travel_sources:
             src_parts = [f"{s['title']} ({s['link']})" for s in travel_sources]
-            sources_str = " | ".join(src_parts)
+            sources_str = ", ".join(src_parts)
+
+        if sources_str:
+            ref_line = f"References: ChromaDB: COP, School Info, CCA | Web: {sources_str}"
+        else:
+            ref_line = "References: ChromaDB: COP, School Info, CCA"
 
         context += (
             f"Recommendation #{idx}. {sch['school_name']}\n"
@@ -657,7 +661,7 @@ def full_ranking_logic(vectordb, inputs):
             f"  [ChromaDB - CCA] Matched CCA: {cca_ref_str}\n"
             f"  [Web Search] Travel Info: {travel_info}\n"
             f"  [Web Search] Knowledge Graph: {kg_str or 'N/A'}\n"
-            f"  [Web Search] Sources: {sources_str or 'N/A'}\n\n"
+            f"  {ref_line}\n\n"
         )
 
     return context
@@ -705,15 +709,13 @@ INSTRUCTIONS:
 
    This school has a {posting_group} COP of [value from data], giving a COP gap of [value from data] from your score of {user_score}. The school is in the [zone from data] zone, located in [location from data][state "which matches" or "which differs from" your preference of {user_zone}/{user_location}]. [If CCA matched: "The school offers [CCA name from data] under [CCA type from data]." If no match: "No matching CCA was found for this school."]. [Use the [Web Search] Travel Info line to describe nearest MRT station and bus routes. If web search info is unavailable, use the [ChromaDB - School Info] MRT and Bus data as fallback.]
 
-   References: ChromaDB: COP, School Info, CCA | Web: [list each web source as "title (url)" from the [Web Search] Sources line]
-   If no web sources exist, omit the "| Web:" part. Example with web sources:
-   References: ChromaDB: COP, School Info, CCA | Web: SchoolName Info - SiteName (https://example.com/page1), Getting There (https://example.com/page2)
+   Copy the "References:" line from the data EXACTLY as provided — do NOT modify, shorten, or omit any part of it. Include the full line with all URLs.
 
 5. If zone/location preference is "Any", skip the location comparison.
 
 6. End with one sentence encouraging the student to visit the school websites for more details.
 
-IMPORTANT: You MUST include every single school from the MATCHED SCHOOLS data. Do NOT summarize, merge, or skip any schools.
+IMPORTANT: You MUST include every single school from the MATCHED SCHOOLS data. Do NOT summarize, merge, or skip any schools. You MUST copy the References line verbatim for EVERY school.
 """
 
 
