@@ -58,3 +58,9 @@ Cut-Off Points for school admission:
 Co-Curricular Activities offered:
 - CCA grouping (e.g., Robotics, Basketball, Choir)
 - CCA type (Physical Sports, Clubs and Societies, Visual and Performing Arts, Uniformed Groups)
+
+### References
+APP  - https://iti123projectai-school-recommendation-zlyhmesbj8yruxygk8debz.streamlit.app/
+COP  - https://sgschooling.com/secondary/cop/all
+CCAs - https://data.gov.sg/datasets?topics=education&query=sch+cca&resultId=d_9aba12b5527843afb0b2e8e4ed6ac6bd
+SCH  - https://data.gov.sg/datasets?topics=education&query=sch+cca&resultId=d_688b934f82c1059ed0a6993d2a829089
