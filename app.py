@@ -108,7 +108,7 @@ def get_valid_pgs(score: int) -> list[str]:
     valid = []
     for (lo, hi), groups in SCORE_PG_RULES.items():
         if lo <= score <= hi:
-            valid = groups
+            valid = list(groups) 
             break
     if score < 9: valid.append("ip")
     return valid
