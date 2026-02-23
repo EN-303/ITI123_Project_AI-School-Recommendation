@@ -682,7 +682,7 @@ STUDENT PROFILE:
 - PSLE Score: {user_score} | Posting Group: {posting_group}
 - School Type: {user_sch_type}
 - Preferred Zone(s): {user_zone} | Preferred Location(s): {user_location}
-- CCA Interest: {user_cca_grp} ({user_cca_type})
+- CCA Interest: {user_cca_type} ({user_cca_grp})
 - Location Weight: {w_loc} | CCA Weight: {w_cca}
 
 MATCHED SCHOOLS:
@@ -694,7 +694,7 @@ INSTRUCTIONS:
    - Explain the issue and suggest adjusting the posting group or preferences
    - Do NOT list any schools
 
-2. Start with: "Based on your PSLE score of {user_score} and your preferences for {user_zone} zone and {user_cca_grp} CCA, here are the recommended {posting_group} schools:"
+2. Start with: "Based on your PSLE score of {user_score} and your preferences for {user_zone} zone and {user_cca_type} CCA, here are the recommended {posting_group} schools:"
 
 3. You MUST list ALL schools provided in the MATCHED SCHOOLS data above. Do NOT skip or omit any school. If there are 6 schools, list all 6. Every "Recommendation #" entry must appear in your output.
 
@@ -703,7 +703,7 @@ INSTRUCTIONS:
    **#[rank]. [SCHOOL NAME]**
    URL: [url from data]
 
-   This school has a {posting_group} COP of [value from data], giving a COP gap of [value from data] from your score of {user_score}. The school is in the [zone from data] zone, located in [location from data][state "which matches" or "which differs from" your preference of {user_zone}/{user_location}]. [If CCA matched: "The school offers [CCA name from data] under [CCA type from data]." If no match: "No matching CCA was found for this school."]. The nearest MRT is [MRT from ChromaDB data] with bus routes [bus from ChromaDB data]. [Include one detail from web search if available.]
+   This school has a {posting_group} COP of [value from data], giving a COP gap of [value from data] from your score of {user_score}. The school is in the [zone from data] zone, located in [location from data][state "which matches" or "which differs from" your preference of {user_zone}/{user_location}]. [If CCA matched: "The school offers [CCA name from data] under [CCA type from data]." If no match: "No matching CCA was found for this school."]. [Use the [Web Search] Travel Info line to describe nearest MRT station and bus routes. If web search info is unavailable, use the [ChromaDB - School Info] MRT and Bus data as fallback.]
 
    References: ChromaDB: COP, School Info, CCA | Web: [list each web source as "title (url)" from the [Web Search] Sources line]
    If no web sources exist, omit the "| Web:" part. Example with web sources:
