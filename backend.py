@@ -1,6 +1,5 @@
 """
 Backend module for the AI School Recommendation system.
-Extracts core logic from Project_v5.ipynb for use by the Streamlit frontend.
 """
 
 import os
@@ -36,9 +35,9 @@ def _get_secret(key: str) -> str | None:
 
 def _download_assets():
     """Download data files and vector DB from Google Drive if not present."""
-    DATA_FOLDER_URL = "https://drive.google.com/drive/folders/1JKEuuseIP9qQjp0NJqerykv3ZBvwpPub?usp=drive_link"
-    if not os.path.exists("data"):
-        gdown.download_folder(url=DATA_FOLDER_URL, quiet=False, use_cookies=False)
+    # DATA_FOLDER_URL = "https://drive.google.com/drive/folders/1JKEuuseIP9qQjp0NJqerykv3ZBvwpPub?usp=drive_link"
+    # if not os.path.exists("data"):
+    #     gdown.download_folder(url=DATA_FOLDER_URL, quiet=False, use_cookies=False)
 
     VECTORDB_FOLDER_URL = "https://drive.google.com/drive/folders/1YKNgoWTqnIpzdLKbS8FUj4ceqvpIcFhl?usp=drive_link"
     if not os.path.exists("sch_vector_db"):
@@ -83,27 +82,27 @@ SCORE_PG_RULES = {
     (26, 30): ["pg1"],
 }
 
-# Debug log collector — populated during each request, read by the frontend
-debug_logs: list[str] = []
+# # Debug log collector — populated during each request, read by the frontend
+# debug_logs: list[str] = []
 
-# ---------------------------------------------------------------------------
-# School name normalization
-# ---------------------------------------------------------------------------
-_RE_BRACKETS = re.compile(r"[()]")
-_RE_PUNCTUATION = re.compile(r"[^a-z0-9 ]")
-_RE_SPACES = re.compile(r"\s+")
-_REMOVE_WORDS_PATTERN = re.compile(r"\b(school|secondary|institution|high)\b")
+# # ---------------------------------------------------------------------------
+# # School name normalization
+# # ---------------------------------------------------------------------------
+# _RE_BRACKETS = re.compile(r"[()]")
+# _RE_PUNCTUATION = re.compile(r"[^a-z0-9 ]")
+# _RE_SPACES = re.compile(r"\s+")
+# _REMOVE_WORDS_PATTERN = re.compile(r"\b(school|secondary|institution|high)\b")
 
 
-def normalize_school_name(name):
-    if not isinstance(name, str):
-        return ""
-    name = unicodedata.normalize("NFKD", name).lower()
-    name = _RE_BRACKETS.sub("", name)
-    name = _REMOVE_WORDS_PATTERN.sub("", name)
-    name = _RE_PUNCTUATION.sub("", name)
-    name = _RE_SPACES.sub(" ", name).strip()
-    return name
+# def normalize_school_name(name):
+#     if not isinstance(name, str):
+#         return ""
+#     name = unicodedata.normalize("NFKD", name).lower()
+#     name = _RE_BRACKETS.sub("", name)
+#     name = _REMOVE_WORDS_PATTERN.sub("", name)
+#     name = _RE_PUNCTUATION.sub("", name)
+#     name = _RE_SPACES.sub(" ", name).strip()
+#     return name
 
 
 # ---------------------------------------------------------------------------
@@ -114,32 +113,32 @@ def filter_secondary_only(df, colname):
     return df[~df[colname].str.contains("PRIMARY|JUNIOR|CENTRALISED", case=False, na=False)]
 
 
-def load_docs(df, source):
-    documents = []
-    for _, row_dict in df.to_dict(orient="index").items():
-        content = "\n".join([f"{col}: {row_dict.get(col, '')}" for col in df.columns])
-        meta = {
-            "source": source,
-            "school_key": str(row_dict.get("school_key")).lower().strip(),
-        }
-        if "COP" in source:
-            meta["ip_cop"] = row_dict.get("IP") if not pd.isna(row_dict.get("IP")) else 99
-            meta["pg3_cop"] = row_dict.get("PG3") if not pd.isna(row_dict.get("PG3")) else 99
-            meta["pg2_cop"] = row_dict.get("PG2") if not pd.isna(row_dict.get("PG2")) else 99
-            meta["pg1_cop"] = row_dict.get("PG1") if not pd.isna(row_dict.get("PG1")) else 99
-            meta["affiliated"] = row_dict.get("Affiliated") if not pd.isna(row_dict.get("Affiliated")) else 0
-        elif "schinfo" in source:
-            meta["sch_name"] = row_dict.get("school_name")
-            meta["sch_url"] = row_dict.get("url_address")
-            meta["nature_code"] = row_dict.get("nature_code")
-            meta["zone_code"] = row_dict.get("zone_code")
-            meta["type_code"] = row_dict.get("type_code")
-            meta["dgp_code"] = row_dict.get("dgp_code")
-        elif "CCA" in source:
-            meta["cca_grp"] = row_dict.get("cca_grouping_desc")
-            meta["cca_type"] = row_dict.get("cca_generic_name")
-        documents.append(Document(page_content=content, metadata=meta))
-    return documents
+# def load_docs(df, source):
+#     documents = []
+#     for _, row_dict in df.to_dict(orient="index").items():
+#         content = "\n".join([f"{col}: {row_dict.get(col, '')}" for col in df.columns])
+#         meta = {
+#             "source": source,
+#             "school_key": str(row_dict.get("school_key")).lower().strip(),
+#         }
+#         if "COP" in source:
+#             meta["ip_cop"] = row_dict.get("IP") if not pd.isna(row_dict.get("IP")) else 99
+#             meta["pg3_cop"] = row_dict.get("PG3") if not pd.isna(row_dict.get("PG3")) else 99
+#             meta["pg2_cop"] = row_dict.get("PG2") if not pd.isna(row_dict.get("PG2")) else 99
+#             meta["pg1_cop"] = row_dict.get("PG1") if not pd.isna(row_dict.get("PG1")) else 99
+#             meta["affiliated"] = row_dict.get("Affiliated") if not pd.isna(row_dict.get("Affiliated")) else 0
+#         elif "schinfo" in source:
+#             meta["sch_name"] = row_dict.get("school_name")
+#             meta["sch_url"] = row_dict.get("url_address")
+#             meta["nature_code"] = row_dict.get("nature_code")
+#             meta["zone_code"] = row_dict.get("zone_code")
+#             meta["type_code"] = row_dict.get("type_code")
+#             meta["dgp_code"] = row_dict.get("dgp_code")
+#         elif "CCA" in source:
+#             meta["cca_grp"] = row_dict.get("cca_grouping_desc")
+#             meta["cca_type"] = row_dict.get("cca_generic_name")
+#         documents.append(Document(page_content=content, metadata=meta))
+#     return documents
 
 
 # ---------------------------------------------------------------------------
@@ -153,35 +152,36 @@ def init_vectordb():
 
     embeddings = OpenAIEmbeddings(model=EMBED_MODEL, api_key=OPENAI_API_KEY)
 
-    # Load CSV data
-    df_cop = pd.read_csv(S_COP)
-    df_schinfo = pd.read_csv(S_SCHINFO)
-    df_cca = pd.read_csv(S_CCA)
+    # # Load CSV data
+    # df_cop = pd.read_csv(S_COP)
+    # df_schinfo = pd.read_csv(S_SCHINFO)
+    # df_cca = pd.read_csv(S_CCA)
 
-    df_schinfo = filter_secondary_only(df_schinfo, "mainlevel_code")
-    df_cca = filter_secondary_only(df_cca, "school_section")
-    df_cca = df_cca.drop(columns=["cca_customized_name"], errors="ignore")
+    # df_schinfo = filter_secondary_only(df_schinfo, "mainlevel_code")
+    # df_cca = filter_secondary_only(df_cca, "school_section")
+    # df_cca = df_cca.drop(columns=["cca_customized_name"], errors="ignore")
 
-    df_cop["school_key"] = df_cop["School"].apply(normalize_school_name)
-    df_schinfo["school_key"] = df_schinfo["school_name"].apply(normalize_school_name)
-    df_cca["school_key"] = df_cca["School_name"].apply(normalize_school_name)
+    # df_cop["school_key"] = df_cop["School"].apply(normalize_school_name)
+    # df_schinfo["school_key"] = df_schinfo["school_name"].apply(normalize_school_name)
+    # df_cca["school_key"] = df_cca["School_name"].apply(normalize_school_name)
 
-    docs_cop = load_docs(df_cop, S_COP)
-    docs_cca = load_docs(df_cca, S_CCA)
-    docs_schinfo = load_docs(df_schinfo, S_SCHINFO)
-    all_docs = docs_cop + docs_cca + docs_schinfo
+    # docs_cop = load_docs(df_cop, S_COP)
+    # docs_cca = load_docs(df_cca, S_CCA)
+    # docs_schinfo = load_docs(df_schinfo, S_SCHINFO)
+    # all_docs = docs_cop + docs_cca + docs_schinfo
 
     try:
         vectordb = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings)
         vectordb.get(limit=1)
     except Exception:
-        if os.path.exists(PERSIST_DIR):
-            shutil.rmtree(PERSIST_DIR)
-        vectordb = Chroma.from_documents(
-            documents=all_docs, embedding=embeddings, persist_directory=PERSIST_DIR
-        )
+        # if os.path.exists(PERSIST_DIR):
+        #     shutil.rmtree(PERSIST_DIR)
+        # vectordb = Chroma.from_documents(
+        #     documents=all_docs, embedding=embeddings, persist_directory=PERSIST_DIR
+        # )
+        raise RuntimeError(f"Failed to initialize ChromaDB: {str(e)}")
 
-    return vectordb, all_docs
+    return vectordb #, all_docs
 
 
 def get_cca_groups():
@@ -196,85 +196,6 @@ def get_locations():
     df = pd.read_csv(S_SCHINFO)
     df = filter_secondary_only(df, "mainlevel_code")
     return sorted(df["dgp_code"].dropna().unique().tolist())
-
-
-# ---------------------------------------------------------------------------
-# Web search
-# ---------------------------------------------------------------------------
-
-def search_travel_info(school_name: str) -> dict:
-    empty_result = {"info": "Travel info unavailable", "sources": [], "knowledge_graph": {}}
-    if not SERPAPI_KEY:
-        empty_result["info"] = "Travel info unavailable (API key not configured)"
-        return empty_result
-
-    query = f"{school_name} Singapore nearest MRT station bus routes how to get there"
-    try:
-        params = {
-            "engine": "google",
-            "q": query,
-            "location": "Singapore",
-            "api_key": SERPAPI_KEY,
-            "num": 5,
-        }
-        search = GoogleSearch(params)
-        results = search.get_dict()
-
-        travel_snippets = []
-        sources = []
-        kg_details = {}
-
-        if "answer_box" in results:
-            ab = results["answer_box"]
-            answer = ab.get("answer") or ab.get("snippet", "")
-            if answer:
-                travel_snippets.append(answer)
-            if ab.get("link"):
-                sources.append({"title": ab.get("title", "Answer Box"), "link": ab["link"]})
-
-        if "knowledge_graph" in results:
-            kg = results["knowledge_graph"]
-            for field in ["title", "address", "phone", "type", "description"]:
-                if field in kg:
-                    kg_details[field] = kg[field]
-            if "address" in kg:
-                travel_snippets.append(f"Address: {kg['address']}")
-            if kg.get("source"):
-                sources.append({"title": kg["source"].get("name", "Knowledge Graph"), "link": kg["source"].get("link", "")})
-            elif kg.get("website"):
-                sources.append({"title": kg.get("title", "School Website"), "link": kg["website"]})
-
-        transport_keywords = ["mrt", "bus", "walk", "station", "transport", "minute", "km", "distance", "route", "nearest"]
-        organic = results.get("organic_results", [])[:5]
-
-        for r in organic:
-            snippet = r.get("snippet", "")
-            link = r.get("link", "")
-            title = r.get("title", "")
-            if link:
-                sources.append({"title": title, "link": link})
-            if snippet and any(kw in snippet.lower() for kw in transport_keywords):
-                travel_snippets.append(snippet)
-                if len(travel_snippets) >= 3:
-                    break
-
-        if not travel_snippets:
-            for r in organic[:2]:
-                snippet = r.get("snippet", "")
-                if snippet:
-                    travel_snippets.append(snippet)
-
-        info = " | ".join(travel_snippets[:3]) if travel_snippets else "No specific travel information found"
-        unique_sources = list({s["link"]: s for s in sources if s.get("link")}.values())
-
-        return {
-            "info": info,
-            "sources": unique_sources[:3],
-            "knowledge_graph": kg_details,
-        }
-    except Exception as e:
-        empty_result["info"] = f"Web search unavailable: {str(e)}"
-        return empty_result
 
 
 # ---------------------------------------------------------------------------
@@ -304,21 +225,24 @@ def sch_retriever(vectordb, user_score: int, posting_group: str, user_sch_type=N
 
     cop_field = f"{posting_group}_cop"
     if posting_group == "ip":
+        # IP posting group: filter only on ip_cop
         cop_filter = {
             "$and": [
                 {"source": {"$eq": s_cop}},
                 {"school_key": {"$in": sch_keys}},
                 {"ip_cop": {"$gte": user_score}},
-                {"ip_cop": {"$lt": 99}},
+                {"ip_cop": {"$lt": 99}}
             ]
         }
     else:
+        # Non-IP posting groups (PG3/PG2/PG1): filter only on the selected PG's COP
+        # Excludes IP-only schools
         cop_filter = {
             "$and": [
                 {"source": {"$eq": s_cop}},
                 {"school_key": {"$in": sch_keys}},
                 {cop_field: {"$gte": user_score}},
-                {cop_field: {"$lt": 99}},
+                {cop_field: {"$lt": 99}}
             ]
         }
 
@@ -326,7 +250,8 @@ def sch_retriever(vectordb, user_score: int, posting_group: str, user_sch_type=N
         all_schs = vectordb.get(where=cop_filter, limit=k)
     except Exception:
         return []
-    if not all_schs.get("ids"):
+
+    if not all_schs.get('ids') or len(all_schs['ids']) == 0:
         return []
 
     eligible_list = []
@@ -362,7 +287,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
         )
     except Exception:
         return []
-    if not loc_results.get("ids"):
+    if not loc_results.get('ids') or len(loc_results['ids']) == 0:
         return []
 
     cca_batch_filter = {"$and": [{"school_key": {"$in": eligible_keys}}, {"source": {"$eq": s_cca}}]}
@@ -384,6 +309,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
             "metadata": all_cca_data["metadatas"][cca_idx],
         })
 
+    # Map location metadata to school_scores
     for i in range(len(loc_results["ids"])):
         meta = loc_results["metadatas"][i]
         key = meta.get("school_key")
@@ -406,17 +332,30 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
             dgp_code_lower = meta.get("dgp_code", "").lower()
             dgp_match = any(loc in dgp_code_lower for loc in location_terms)
 
-        if zone_match and dgp_match:
-            school_scores[key]["loc_score"] = 2
-        elif zone_match or dgp_match:
+        # Check location in Metadata (handle comma-separated values)
+        dgp_match = False
+        if user_location:
+            location_terms = [loc.strip().lower() for loc in user_location.split(',') if loc.strip()]
+            dgp_code_lower = meta.get('dgp_code', '').lower()
+            dgp_match = any(loc in dgp_code_lower for loc in location_terms)
+
+        # If schinfo docs matches, set score to 1
+        if zone_match:
             school_scores[key]["loc_score"] = 1
 
+        if zone_match and dgp_match:
+            school_scores[key]["loc_score"] = 2
+
+        if not zone_match and dgp_match:
+            school_scores[key]["loc_score"] = 1
+
+        # Map CCA =============
         cca_items = cca_by_school.get(key, [])
         cca_match = []
         if cca_items:
             search_terms = []
             if user_cca_grp:
-                search_terms = [term.strip().lower() for term in user_cca_grp.split(",") if term.strip()]
+                search_terms = [term.strip().lower() for term in user_cca_grp.split(',') if term.strip()]
             search_variants = set()
             for term in search_terms:
                 search_variants.add(term)
@@ -426,22 +365,30 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
                     search_variants.add(term + 's')
             for item in cca_items:
                 cca_grp_lower = item["metadata"].get("cca_grp", "").lower()
-                matched = any(v in cca_grp_lower for v in search_variants)
+                matched = False
+                for v in search_variants:
+                    if v in cca_grp_lower:
+                        matched = True
+                        break
                 if matched:
+                    from langchain_core.documents import Document
                     cca_match = [Document(page_content=item["page_content"], metadata=item["metadata"])]
                     break
             if not cca_match and user_cca_type:
+                from langchain_core.documents import Document
                 cca_match = [Document(page_content=cca_items[0]["page_content"], metadata=cca_items[0]["metadata"])]
 
         if cca_match:
             match_doc = cca_match[0]
             school_scores[key]["cca_info"] = match_doc.metadata
+
             if not user_cca_grp:
                 if user_cca_type:
                     school_scores[key]["cca_score"] = 1
             else:
-                meta_grp = match_doc.metadata.get("cca_grp", "").lower()
-                cca_terms = [term.strip().lower() for term in user_cca_grp.split(",") if term.strip()]
+                meta_grp = match_doc.metadata.get('cca_grp', '').lower()
+
+                cca_terms = [term.strip().lower() for term in user_cca_grp.split(',') if term.strip()]
                 score_variants = set()
                 for term in cca_terms:
                     score_variants.add(term)
@@ -450,13 +397,17 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
                     else:
                         score_variants.add(term + 's')
                 cca_matched = any(v in meta_grp for v in score_variants)
+
                 if user_cca_type and cca_matched:
                     school_scores[key]["cca_score"] = 2
-                elif not user_cca_type and cca_matched:
-                    school_scores[key]["cca_score"] = 1
-                elif user_cca_type and not cca_matched:
+
+                if not user_cca_type and cca_matched:
                     school_scores[key]["cca_score"] = 1
 
+                if user_cca_type and not cca_matched:
+                    school_scores[key]["cca_score"] = 1
+
+        #get cop_gap =============
         sch_cop_gap = next((item for item in eligible_schs if item.metadata.get("school_key") == key), None)
         if sch_cop_gap:
             cop_gap = sch_cop_gap.metadata.get("cop_gap", 999)
@@ -473,6 +424,7 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
         school_scores[key]["cop_gap"] = cop_gap
         school_scores[key]["cop"] = cop
 
+    # 4. Final Weighted Ranking
     final_list = []
     for key, data in school_scores.items():
         total_score = (data["loc_score"] * w_loc) + (data["cca_score"] * w_cca)
@@ -493,22 +445,115 @@ def weighted_sch_ranker(vectordb, eligible_schs, w_loc, w_cca,
     final_list.sort(key=lambda x: (-x["score"], x["cop_gap"]))
     top_6 = final_list[:6]
 
-    debug_logs.append(f"**Top {len(top_6)} Schools**")
+    print(f"**Top {len(top_6)} Schools**")
     for i, s in enumerate(top_6, 1):
-        cca = s.get("matched_cca") or "None"
-        debug_logs.append(
-            f"  {i}. {s['school_name']} | score: {s['score']:.2f} | "
-            f"cop_gap: {s['cop_gap']} | location: {s['location']} | CCA: {cca}"
-        )
+        print(f"  {i}. {s['school_name']} ")
+    
     return top_6
 
+
+# ---------------------------------------------------------------------------
+# Web search
+# ---------------------------------------------------------------------------
+
+def search_travel_info(school_name: str) -> dict:
+    empty_result = {
+        "info": "Travel info unavailable",
+        "sources": [],
+        "knowledge_graph": {}
+    }
+
+    if not SERPAPI_KEY:
+        empty_result["info"] = "Travel info unavailable (API key not configured)"
+        return empty_result
+
+    query = f"{school_name} Singapore nearest MRT station bus routes how to get there"
+
+    try:
+        params = {
+            "engine": "google",
+            "q": query,
+            "location": "Singapore",
+            "api_key": SERPAPI_KEY,
+            "num": 5
+        }
+        search = GoogleSearch(params)
+        results = search.get_dict()
+
+        travel_snippets = []
+        sources = []
+        kg_details = {}
+
+        # Check answer box for direct answers
+        if "answer_box" in results:
+            ab = results["answer_box"]
+            answer = ab.get("answer") or ab.get("snippet", "")
+            if answer:
+                travel_snippets.append(answer)
+            ab_link = ab.get("link", "")
+            ab_title = ab.get("title", "Answer Box")
+            if ab_link:
+                sources.append({"title": ab_title, "link": ab_link})
+
+        # Extract knowledge graph details
+        if "knowledge_graph" in results:
+            kg = results["knowledge_graph"]
+            for field in ["title", "address", "phone", "type", "description"]:
+                if field in kg:
+                    kg_details[field] = kg[field]
+            if "address" in kg:
+                travel_snippets.append(f"Address: {kg['address']}")
+            kg_source = kg.get("knowledge_graph_search_link") or kg.get("serpapi_knowledge_graph_search_link", "")
+            if kg.get("source"):
+                sources.append({"title": kg["source"].get("name", "Knowledge Graph"), "link": kg["source"].get("link", "")})
+            elif kg.get("website"):
+                sources.append({"title": kg.get("title", "School Website"), "link": kg["website"]})
+
+        # Extract transport-related snippets from organic results with source links
+        transport_keywords = [
+            "mrt", "bus", "walk", "station", "transport",
+            "minute", "km", "distance", "route", "nearest"
+        ]
+        organic = results.get("organic_results", [])[:5]
+
+        for r in organic:
+            snippet = r.get("snippet", "")
+            link = r.get("link", "")
+            title = r.get("title", "")
+            if link:
+                sources.append({"title": title, "link": link})
+            if snippet and any(kw in snippet.lower() for kw in transport_keywords):
+                travel_snippets.append(snippet)
+                if len(travel_snippets) >= 3:
+                    break
+
+        # Fallback to first available snippets
+        if not travel_snippets:
+            for r in organic[:2]:
+                snippet = r.get("snippet", "")
+                if snippet:
+                    travel_snippets.append(snippet)
+
+        info = " | ".join(travel_snippets[:3]) if travel_snippets else "No specific travel information found"
+        unique_sources = list({s["link"]: s for s in sources if s.get("link")}.values())
+
+        return {
+            "info": info,
+            "sources": unique_sources[:3],
+            "knowledge_graph": kg_details
+        }
+
+    except Exception as e:
+        empty_result["info"] = f"Web search unavailable: {str(e)}"
+        return empty_result
+
+    print(f"SerpAPI key loaded: {'Yes' if SERPAPI_KEY else 'No'}")
 
 # ---------------------------------------------------------------------------
 # Full ranking logic (context builder)
 # ---------------------------------------------------------------------------
 
 def full_ranking_logic(vectordb, inputs):
-    debug_logs.clear()
     user_score = inputs.get("user_score")
     if user_score is None:
         return "INVALID_INPUT: user_score is required."
@@ -598,71 +643,68 @@ def full_ranking_logic(vectordb, inputs):
             f"but none matched the ranking criteria. Try adjusting zone, location, or CCA preferences."
         )
 
-    context = f"Student PSLE Score: {user_score}\n"
-    context += f"Posting Group: {pg_upper}\n"
-    context += "(Schools sorted by Weighted Score descending, then COP Gap ascending)\n\n"
-
-    for idx, sch in enumerate(top_6, 1):
-        zone = sch["sch_metadata"].get("zone_code", "N/A")
-        cop_gap = sch.get("cop_gap", "N/A")
-        cop_display = sch["cop"].replace(": 99.0", ": N/A").replace(": 99", ": N/A")
-
-        db_ref = {"mrt": "N/A", "bus": "N/A", "address": "N/A", "postal_code": "N/A"}
-        sch_content = sch.get("sch_content", "")
-        if sch_content:
-            for line in sch_content.split("\n"):
-                line_lower = line.strip().lower()
-                if line_lower.startswith("mrt_desc:"):
-                    db_ref["mrt"] = line.split(":", 1)[1].strip()
-                elif line_lower.startswith("bus_desc:"):
-                    db_ref["bus"] = line.split(":", 1)[1].strip()
-                elif line_lower.startswith("address:"):
-                    db_ref["address"] = line.split(":", 1)[1].strip()
-                elif line_lower.startswith("postal_code:"):
-                    db_ref["postal_code"] = line.split(":", 1)[1].strip()
-
-        db_ref_str = (
-            f"MRT: {db_ref['mrt']} | Bus: {db_ref['bus']} | "
-            f"Address: {db_ref['address']}, S{db_ref['postal_code']}"
-        )
-
-        cca_meta = sch.get("cca_metadata") or {}
-        cca_grp = cca_meta.get("cca_grp", "")
-        cca_type = cca_meta.get("cca_type", "")
-        cca_ref_str = f"{cca_grp} ({cca_type})" if cca_grp else "None"
-
-        travel_result = search_travel_info(sch["school_name"])
-        travel_info = travel_result.get("info", "N/A")
-        travel_sources = travel_result.get("sources", [])
-        travel_kg = travel_result.get("knowledge_graph", {})
-
-        kg_str = ""
-        if travel_kg:
-            kg_parts = [f"{k}: {v}" for k, v in travel_kg.items()]
-            kg_str = "; ".join(kg_parts)
-
-        sources_str = ""
-        if travel_sources:
-            src_parts = [f"{s['title']} ({s['link']})" for s in travel_sources]
-            sources_str = ", ".join(src_parts)
-
-        if sources_str:
-            ref_line = f"References: ChromaDB: COP, School Info, CCA | Web: {sources_str}"
-        else:
-            ref_line = "References: ChromaDB: COP, School Info, CCA"
-
-        context += (
-            f"Recommendation #{idx}. {sch['school_name']}\n"
-            f"  URL: {sch['school_url']}\n"
-            f"  Weighted Score: {sch['score']:.2f}\n"
-            f"  [ChromaDB - COP] COP: {cop_display} | COP Gap: {cop_gap}\n"
-            f"  [ChromaDB - School Info] Zone: {zone} | Location: {sch['location'] or 'None'}\n"
-            f"  [ChromaDB - School Info] {db_ref_str}\n"
-            f"  [ChromaDB - CCA] Matched CCA: {cca_ref_str}\n"
-            f"  [Web Search] Travel Info: {travel_info}\n"
-            f"  [Web Search] Knowledge Graph: {kg_str or 'N/A'}\n"
-            f"  {ref_line}\n\n"
-        )
+    # Include all top 6 recommendations
+    if top_6:
+        context = f"Student PSLE Score: {user_score}\n"
+        context += f"Posting Group: {pg_upper}\n"
+        context += "(Schools sorted by Weighted Score descending, then COP Gap ascending)\n\n"
+    
+        for idx, sch in enumerate(top_6, 1):
+            zone = sch["sch_metadata"].get("zone_code", "N/A")
+            cop_gap = sch.get("cop_gap", "N/A")
+            cop_display = sch["cop"].replace(": 99.0", ": N/A").replace(": 99", ": N/A")
+    
+            db_ref = {"address": "N/A", "postal_code": "N/A"}
+            sch_content = sch.get("sch_content", "")
+            if sch_content:
+                for line in sch_content.split("\n"):
+                    line_lower = line.strip().lower()
+                    if line_lower.startswith("address:"):
+                        db_ref["address"] = line.split(":", 1)[1].strip()
+                    elif line_lower.startswith("postal_code:"):
+                        db_ref["postal_code"] = line.split(":", 1)[1].strip()
+    
+            db_ref_str = (
+                f"Address: {db_ref['address']}, S{db_ref['postal_code']}"
+            )
+    
+            cca_meta = sch.get("cca_metadata") or {}
+            cca_grp = cca_meta.get("cca_grp", "")
+            cca_type = cca_meta.get("cca_type", "")
+            cca_ref_str = f"{cca_grp} ({cca_type})" if cca_grp else "None"
+    
+            travel_result = search_travel_info(sch["school_name"])
+            travel_info = travel_result.get("info", "N/A")
+            travel_sources = travel_result.get("sources", [])
+            travel_kg = travel_result.get("knowledge_graph", {})
+    
+            kg_str = ""
+            if travel_kg:
+                kg_parts = [f"{k}: {v}" for k, v in travel_kg.items()]
+                kg_str = "; ".join(kg_parts)
+    
+            sources_str = ""
+            if travel_sources:
+                src_parts = [f"{s['title']} ({s['link']})" for s in travel_sources]
+                sources_str = ", ".join(src_parts)
+    
+            if sources_str:
+                ref_line = f"References: ChromaDB: COP, School Info, CCA | Web: {sources_str}"
+            else:
+                ref_line = "References: ChromaDB: COP, School Info, CCA"
+    
+            context += (
+                f"Recommendation #{idx}. {sch['school_name']}\n"
+                f"  URL: {sch['school_url']}\n"
+                f"  Weighted Score: {sch['score']:.2f}\n"
+                f"  [ChromaDB - COP] COP: {cop_display} | COP Gap: {cop_gap}\n"
+                f"  [ChromaDB - School Info] Zone: {zone} | Location: {sch['location'] or 'None'}\n"
+                f"  [ChromaDB - School Info] {db_ref_str}\n"
+                f"  [ChromaDB - CCA] Matched CCA: {cca_ref_str}\n"
+                f"  [Web Search] Travel Info: {travel_info}\n"
+                f"  [Web Search] Knowledge Graph: {kg_str or 'N/A'}\n"
+                f"  {ref_line}\n\n"
+            )
 
     return context
 
@@ -707,9 +749,10 @@ INSTRUCTIONS:
    **#[rank]. [SCHOOL NAME]**
    URL: [url from data]
 
-   This school has a {posting_group} COP of [value from data], giving a COP gap of [value from data] from your score of {user_score}. The school is in the [zone from data] zone, located in [location from data][state "which matches" or "which differs from" your preference of {user_zone}/{user_location}]. [If CCA matched: "The school offers [CCA name from data] under [CCA type from data]." If no match: "No matching CCA was found for this school."]. [Use the [Web Search] Travel Info line to describe nearest MRT station and bus routes. If web search info is unavailable, use the [ChromaDB - School Info] MRT and Bus data as fallback.]
+   This school has a {posting_group} COP of [value from data], giving a COP gap of [value from data] from your score of {user_score}. The school is in the [zone from data] zone, located in [location from data][state "which matches" or "which differs from" your preference of {user_zone}/{user_location}]. [If CCA matched: "The school offers [CCA name from data] under [CCA type from data]." If no match: "No matching CCA was found for this school."]. [Use the [Web Search] Travel Info line to describe nearest MRT station and bus routes.]
 
    Copy the "References:" line from the data EXACTLY as provided — do NOT modify, shorten, or omit any part of it. Include the full line with all URLs.
+   References: ChromaDB: COP, School Info, CCA | Web: SchoolName Info - SiteName (https://example.com/page1), Getting There (https://example.com/page2)
 
 5. If zone/location preference is "Any", skip the location comparison.
 

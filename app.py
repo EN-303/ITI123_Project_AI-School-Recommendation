@@ -10,7 +10,7 @@ from backend import (
     VALID_SCH_TYPES,
     VALID_ZONES,
     build_rag_chain,
-    debug_logs,
+    # debug_logs,
     get_cca_groups,
     get_locations,
     init_vectordb,
@@ -231,18 +231,32 @@ with col_result:
                 "user_cca_grp": cca_grp_val,
             }
 
-            with st.spinner("Searching schools and fetching travel info..."):
+            # with st.spinner("Searching schools and fetching travel info..."):
+            #     try:
+            #         response = rag_chain.invoke(user_input)
+            #     except Exception as e:
+            #         response = None
+            #         st.error(f"An error occurred: {str(e)}")
+
+            with st.status("Finding the best schools for you...", expanded=True) as status:
                 try:
+                    st.write("Searching schools and fetching travel info...")
+                    # Your chain is invoked here
                     response = rag_chain.invoke(user_input)
+                    
+                    status.update(label="Recommendations ready!", state="complete", expanded=False)
                 except Exception as e:
-                    response = None
                     st.error(f"An error occurred: {str(e)}")
+                    status.update(label="Search failed.", state="error")
+                    response = None
 
             if response:
                 st.subheader("Recommended Schools")
                 with st.container(height=600):
                     st.markdown(response)
-
+            elif response == "":
+                st.warning("No schools matched your criteria. Try widening your search distance or score range.")
+    
             # with st.expander("Debug Info", expanded=False):
             #     st.markdown(f"**Input:** {user_input}")
             #     if debug_logs:
@@ -255,11 +269,17 @@ with col_result:
             """
             ### How to use
             1. Set your **PSLE score** and **posting group** on the left
+
+            | Posting Group | Score Range |
+            | :--- | :--- |
+            | **IP** | 4 - 8 |
+            | **PG3** | 4 - 20 | 
+            | **PG2** | 21 - 25 |
+            | **PG1** | 26 - 30 |
+            
             2. Choose your preferred **zone**, **location**, and **CCA**
             3. Adjust the **priority weights** between location and CCA
             4. Click **Get Recommendations**
-
-            Score ranges: 4-20 → PG3 | 21-22 → PG3/PG2 | 23-24 → PG2 | 25 → PG2/PG1 | 26-30 → PG1.
 
             The system will retrieve matching schools from the database,
             rank them based on your preferences, search for travel information,
