@@ -132,8 +132,8 @@ with col_form:
     # -- PSLE Score --
     user_score = st.slider(
         "PSLE Score",
-        min_value=4, max_value=32, value=10, step=1,
-        help="Lower score = better performance. Range: 4 (best) to 32.",
+        min_value=4, max_value=30, value=10, step=1,
+        help="Lower score = better performance. Range: 4 (best) to 30.",
     )
 
     valid_pgs = get_valid_pgs(user_score)
@@ -243,13 +243,13 @@ with col_result:
                 with st.container(height=600):
                     st.markdown(response)
 
-            with st.expander("Debug Info", expanded=False):
-                st.markdown(f"**Input:** {user_input}")
-                if debug_logs:
-                    for log in debug_logs:
-                        st.markdown(log)
-                else:
-                    st.write("No debug logs captured.")
+            # with st.expander("Debug Info", expanded=False):
+            #     st.markdown(f"**Input:** {user_input}")
+            #     if debug_logs:
+            #         for log in debug_logs:
+            #             st.markdown(log)
+            #     else:
+            #         st.write("No debug logs captured.")
     else:
         st.markdown(
             """
@@ -258,6 +258,8 @@ with col_result:
             2. Choose your preferred **zone**, **location**, and **CCA**
             3. Adjust the **priority weights** between location and CCA
             4. Click **Get Recommendations**
+
+            Score ranges: 4-20 → PG3 | 21-22 → PG3/PG2 | 23-24 → PG2 | 25 → PG2/PG1 | 26-30 → PG1.
 
             The system will retrieve matching schools from the database,
             rank them based on your preferences, search for travel information,
