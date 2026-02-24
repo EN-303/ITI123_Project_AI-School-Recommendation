@@ -18,7 +18,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from serpapi import GoogleSearch
 
 # ---------------------------------------------------------------------------
-# Configuration — supports both Streamlit Cloud (st.secrets) and local (.env)
+# Configuration
 # ---------------------------------------------------------------------------
 import gdown
 
@@ -34,21 +34,11 @@ def _get_secret(key: str) -> str | None:
 
 
 def _download_assets():
-    """Download data files and vector DB from Google Drive if not present."""
-    # DATA_FOLDER_URL = "https://drive.google.com/drive/folders/1JKEuuseIP9qQjp0NJqerykv3ZBvwpPub?usp=drive_link"
-    # if not os.path.exists("data"):
-    #     gdown.download_folder(url=DATA_FOLDER_URL, quiet=False, use_cookies=False)
+    """Download vector DB from Google Drive if not present."""
 
     VECTORDB_FOLDER_URL = "https://drive.google.com/drive/folders/1YKNgoWTqnIpzdLKbS8FUj4ceqvpIcFhl?usp=drive_link"
     if not os.path.exists("sch_vector_db"):
         gdown.download_folder(url=VECTORDB_FOLDER_URL, quiet=False, use_cookies=False)
-
-
-# Try loading local .env files (ignored on Streamlit Cloud if not present)
-if os.path.exists(".env"):
-    load_dotenv(".env")
-if os.path.exists(".env_local"):
-    load_dotenv(".env_local", override=True)
 
 _download_assets()
 
@@ -82,63 +72,12 @@ SCORE_PG_RULES = {
     (26, 30): ["pg1"],
 }
 
-# # Debug log collector — populated during each request, read by the frontend
-# debug_logs: list[str] = []
-
-# # ---------------------------------------------------------------------------
-# # School name normalization
-# # ---------------------------------------------------------------------------
-# _RE_BRACKETS = re.compile(r"[()]")
-# _RE_PUNCTUATION = re.compile(r"[^a-z0-9 ]")
-# _RE_SPACES = re.compile(r"\s+")
-# _REMOVE_WORDS_PATTERN = re.compile(r"\b(school|secondary|institution|high)\b")
-
-
-# def normalize_school_name(name):
-#     if not isinstance(name, str):
-#         return ""
-#     name = unicodedata.normalize("NFKD", name).lower()
-#     name = _RE_BRACKETS.sub("", name)
-#     name = _REMOVE_WORDS_PATTERN.sub("", name)
-#     name = _RE_PUNCTUATION.sub("", name)
-#     name = _RE_SPACES.sub(" ", name).strip()
-#     return name
-
-
 # ---------------------------------------------------------------------------
 # Data helpers
 # ---------------------------------------------------------------------------
 
 def filter_secondary_only(df, colname):
     return df[~df[colname].str.contains("PRIMARY|JUNIOR|CENTRALISED", case=False, na=False)]
-
-
-# def load_docs(df, source):
-#     documents = []
-#     for _, row_dict in df.to_dict(orient="index").items():
-#         content = "\n".join([f"{col}: {row_dict.get(col, '')}" for col in df.columns])
-#         meta = {
-#             "source": source,
-#             "school_key": str(row_dict.get("school_key")).lower().strip(),
-#         }
-#         if "COP" in source:
-#             meta["ip_cop"] = row_dict.get("IP") if not pd.isna(row_dict.get("IP")) else 99
-#             meta["pg3_cop"] = row_dict.get("PG3") if not pd.isna(row_dict.get("PG3")) else 99
-#             meta["pg2_cop"] = row_dict.get("PG2") if not pd.isna(row_dict.get("PG2")) else 99
-#             meta["pg1_cop"] = row_dict.get("PG1") if not pd.isna(row_dict.get("PG1")) else 99
-#             meta["affiliated"] = row_dict.get("Affiliated") if not pd.isna(row_dict.get("Affiliated")) else 0
-#         elif "schinfo" in source:
-#             meta["sch_name"] = row_dict.get("school_name")
-#             meta["sch_url"] = row_dict.get("url_address")
-#             meta["nature_code"] = row_dict.get("nature_code")
-#             meta["zone_code"] = row_dict.get("zone_code")
-#             meta["type_code"] = row_dict.get("type_code")
-#             meta["dgp_code"] = row_dict.get("dgp_code")
-#         elif "CCA" in source:
-#             meta["cca_grp"] = row_dict.get("cca_grouping_desc")
-#             meta["cca_type"] = row_dict.get("cca_generic_name")
-#         documents.append(Document(page_content=content, metadata=meta))
-#     return documents
 
 
 # ---------------------------------------------------------------------------
@@ -152,37 +91,13 @@ def init_vectordb():
 
     embeddings = OpenAIEmbeddings(model=EMBED_MODEL, api_key=OPENAI_API_KEY)
 
-    # # Load CSV data
-    # df_cop = pd.read_csv(S_COP)
-    # df_schinfo = pd.read_csv(S_SCHINFO)
-    # df_cca = pd.read_csv(S_CCA)
-
-    # df_schinfo = filter_secondary_only(df_schinfo, "mainlevel_code")
-    # df_cca = filter_secondary_only(df_cca, "school_section")
-    # df_cca = df_cca.drop(columns=["cca_customized_name"], errors="ignore")
-
-    # df_cop["school_key"] = df_cop["School"].apply(normalize_school_name)
-    # df_schinfo["school_key"] = df_schinfo["school_name"].apply(normalize_school_name)
-    # df_cca["school_key"] = df_cca["School_name"].apply(normalize_school_name)
-
-    # docs_cop = load_docs(df_cop, S_COP)
-    # docs_cca = load_docs(df_cca, S_CCA)
-    # docs_schinfo = load_docs(df_schinfo, S_SCHINFO)
-    # all_docs = docs_cop + docs_cca + docs_schinfo
-
     try:
         vectordb = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings)
         vectordb.get(limit=1)
     except Exception:
-        # if os.path.exists(PERSIST_DIR):
-        #     shutil.rmtree(PERSIST_DIR)
-        # vectordb = Chroma.from_documents(
-        #     documents=all_docs, embedding=embeddings, persist_directory=PERSIST_DIR
-        # )
         raise RuntimeError(f"Failed to initialize ChromaDB: {str(e)}")
 
-    return vectordb #, all_docs
-
+    return vectordb
 
 def get_cca_groups():
     """Return sorted list of unique CCA grouping descriptions."""

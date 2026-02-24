@@ -10,7 +10,6 @@ from backend import (
     VALID_SCH_TYPES,
     VALID_ZONES,
     build_rag_chain,
-    # debug_logs,
     get_cca_groups,
     get_locations,
     init_vectordb,
@@ -80,7 +79,7 @@ st.divider()
 
 @st.cache_resource(show_spinner="Loading school database...")
 def load_backend():
-    vectordb, _ = init_vectordb()
+    vectordb = init_vectordb()
     rag_chain = build_rag_chain(vectordb)
     return rag_chain
 
@@ -138,13 +137,6 @@ with col_form:
 
     valid_pgs = get_valid_pgs(user_score)
     pg_options = {PG_DISPLAY.get(pg, pg.upper()): pg for pg in valid_pgs}
-
-    # st.markdown(
-    #     f'<div class="score-info">Score <strong>{user_score}</strong> qualifies for: '
-    #     f'<strong>{", ".join(pg.upper() for pg in valid_pgs if pg != "ip")}</strong>'
-    #     f' (and IP if COP allows)</div>',
-    #     unsafe_allow_html=True,
-    # )
 
     # -- Posting Group --
     pg_label = st.selectbox(
@@ -231,13 +223,7 @@ with col_result:
                 "user_cca_grp": cca_grp_val,
             }
 
-            # with st.spinner("Searching schools and fetching travel info..."):
-            #     try:
-            #         response = rag_chain.invoke(user_input)
-            #     except Exception as e:
-            #         response = None
-            #         st.error(f"An error occurred: {str(e)}")
-
+            
             with st.status("Finding the best schools for you...", expanded=True) as status:
                 try:
                     st.write("Searching schools and fetching travel info...")
@@ -257,13 +243,6 @@ with col_result:
             elif response == "":
                 st.warning("No schools matched your criteria. Try widening your search distance or score range.")
     
-            # with st.expander("Debug Info", expanded=False):
-            #     st.markdown(f"**Input:** {user_input}")
-            #     if debug_logs:
-            #         for log in debug_logs:
-            #             st.markdown(log)
-            #     else:
-            #         st.write("No debug logs captured.")
     else:
         st.markdown(
             """
