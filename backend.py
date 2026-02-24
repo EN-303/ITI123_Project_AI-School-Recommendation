@@ -34,7 +34,10 @@ def _get_secret(key: str) -> str | None:
 
 
 def _download_assets():
-    """Download vector DB from Google Drive if not present."""
+    """Download data files and vector DB from Google Drive if not present."""
+    DATA_FOLDER_URL = "https://drive.google.com/drive/folders/1JKEuuseIP9qQjp0NJqerykv3ZBvwpPub?usp=drive_link"
+    if not os.path.exists("data"):
+        gdown.download_folder(url=DATA_FOLDER_URL, quiet=False, use_cookies=False)
 
     VECTORDB_FOLDER_URL = "https://drive.google.com/drive/folders/1YKNgoWTqnIpzdLKbS8FUj4ceqvpIcFhl?usp=drive_link"
     if not os.path.exists("sch_vector_db"):
